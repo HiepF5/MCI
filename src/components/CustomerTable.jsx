@@ -1,22 +1,26 @@
-import { Table } from 'antd'
+import React, { useState } from 'react'
+import { Table, Modal } from 'antd'
+import AddCustomerButton from './AddCustomerButton'
+import { getCustomerById } from '../apis/userApi'
 
 const CustomerTable = ({ data }) => {
+  const [isModalVisible, setIsModalVisible] = useState(false)
+  const [selectedCustomer, setSelectedCustomer] = useState(null)
+
   const columns = [
-    { title: '#', dataIndex: 'id', key: 'id' },
-    { title: 'Mã KH', dataIndex: 'customer_code', key: 'customer_code' },
-    { title: 'Họ và tên', dataIndex: 'full_name', key: 'full_name' },
-    { title: 'SĐT', dataIndex: 'phone_number', key: 'phone_number' },
+    { title: 'Mã khách hàng', dataIndex: 'customer_code', key: 'customer_code' },
+    { title: 'Họ tên', dataIndex: 'full_name', key: 'full_name' },
+    { title: 'Số điện thoại', dataIndex: 'phone_number', key: 'phone_number' },
     { title: 'Email', dataIndex: 'email', key: 'email' },
-    { title: 'Người tiếp thị', dataIndex: 'service', key: 'service' },
+    { title: 'Dịch vụ', dataIndex: 'service', key: 'service' },
     { title: 'Nguồn', dataIndex: 'source', key: 'source' },
     { title: 'Ghi chú', dataIndex: 'notes', key: 'notes' },
     { title: 'Ngày tạo', dataIndex: 'created_at', key: 'created_at' },
   ]
-  console.log(data)
 
   const dataSource = data.map((item, index) => ({
-    key: index,
-    id: index + 1,
+    key: index + 1,
+    id: item.id,
     customer_code: item.customer_code,
     full_name: item.full_name,
     phone_number: item.phone_number,
@@ -27,7 +31,43 @@ const CustomerTable = ({ data }) => {
     created_at: item.created_at,
   }))
 
-  return <Table columns={columns} dataSource={dataSource} pagination={false} />
+  const handleRowClick = async (record) => {
+    console.log(record)
+    debugger;
+    const data = await getCustomerById(record.id)
+    console.log(data)
+    setSelectedCustomer(data)
+    setIsModalVisible(true)
+  }
+
+  const handleModalClose = () => {
+    setIsModalVisible(false)
+    setSelectedCustomer(null)
+  }
+
+  return (
+    <div>
+      <Table
+        columns={columns}
+        dataSource={dataSource}
+        pagination={false}
+        onRow={(record) => ({
+          onClick: () => handleRowClick(record),
+        })}
+      />
+      <Modal
+        title="Chi tiết khách hàng"
+        open={isModalVisible}
+        onCancel={handleModalClose}
+        footer={null}
+      >
+        <AddCustomerButton
+          customer={selectedCustomer}
+          onCustomerAdded={handleModalClose}
+        />
+      </Modal>
+    </div>
+  )
 }
 
 export default CustomerTable

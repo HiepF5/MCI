@@ -1,19 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import {
-  Button,
-  Modal,
-  Form,
-  Input,
-  Select,
-  DatePicker,
-  Radio,
-  Tag,
-  Row,
-  Col,
-  Typography,
-  TimePicker,
-  Space
-} from 'antd'
+import { Button, Modal, Form, Input, Select, DatePicker, Radio, Tag, Row, Col, Typography, TimePicker } from 'antd'
 import {
   createCustomer,
   createSocialMedia,
@@ -26,39 +12,95 @@ import {
 } from '../apis/userApi'
 import CustomerCareTable from './CustomerCareTable'
 import CustomDropdown from './CustomDropdown'
+import { getDistricts, getProvinces, getWards } from '../apis/adressApi'
 
 const { Title } = Typography
 const { TextArea } = Input
 
-const AddCustomerButton = ({ onCustomerAdded }) => {
+const AddCustomerButton = ({ customer, onCustomerAdded }) => {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [services, setServices] = useState([])
   const [sources, setSources] = useState([])
   const [socialMedia, setSocialMedia] = useState([])
   const [status, setStatus] = useState([])
+  const [provinces, setProvinces] = useState([])
+  const [districts, setDistricts] = useState([])
+  const [wards, setWards] = useState([])
+  const [selectedProvince, setSelectedProvince] = useState(null)
+  const [selectedDistrict, setSelectedDistrict] = useState(null)
+  const [comments, setComments] = useState([])
+
+  const [form] = Form.useForm()
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [serviceData, sourceData, socialMediaData, statusData] = await Promise.all([
+        const [serviceData, sourceData, socialMediaData, statusData, provincesData] = await Promise.all([
           getServices(),
           getSources(),
           getSocialMedia(),
-          getStatus()
+          getStatus(),
+          getProvinces()
         ])
         setServices(serviceData.results)
         setSources(sourceData.results)
         setSocialMedia(socialMediaData.results)
         setStatus(statusData.results)
+        setProvinces(provincesData.data)
       } catch (error) {
         console.error('Failed to fetch customer data:', error)
       }
     }
+
     fetchData()
   }, [])
 
-  const showModal = () => {
-    setIsModalVisible(true)
+  useEffect(() => {
+    if (customer) {
+      form.setFieldsValue({
+        customerName: customer.full_name,
+        gender: customer.gender,
+        dob: customer.date_of_birth,
+        phone: customer.phone_number,
+        email: customer.email,
+        socialMedia: customer.social_media,
+        socialMediaUrl: customer.detailed_info,
+        source: customer.source,
+        status: customer.status,
+        city: customer.city,
+        district: customer.district,
+        ward: customer.ward,
+        houseNumber: customer.houseNumber,
+        street: customer.street,
+        detailedInfo: customer.detailed_info,
+        notes: customer.notes,
+        followUpDate: customer.follow_up_date,
+        followDownDate: customer.follow_down_date 
+      })
+      setComments(customer.comments || [])
+    }
+  }, [customer])
+
+  const handleProvinceChange = async (provinceId) => {
+    setSelectedProvince(provinceId)
+    setSelectedDistrict(null)
+    setWards([])
+
+    try {
+      const data = await getDistricts(provinceId)
+      setDistricts(data.data)
+    } catch (error) {
+    }
+  }
+
+  const handleDistrictChange = async (districtId) => {
+    setSelectedDistrict(districtId)
+
+    try {
+      const data = await getWards(districtId)
+      setWards(data.data)
+    } catch (error) {
+    }
   }
 
   const handleOk = async (values) => {
@@ -80,66 +122,76 @@ const AddCustomerButton = ({ onCustomerAdded }) => {
         ward: values.ward,
         detailed_info: values.detailedInfo,
         notes: values.notes,
-        comments: values.comments
-          ? values.comments.map((comment) => ({
-              title: comment.title,
-              time: comment.time ? comment.time.format('YYYY-MM-DDTHH:mm:ss') : null,
-              status_id: comment.statusId
-            }))
-          : []
+        comments: comments.map((comment) => ({
+          title: comment.title,
+          time: comment.time ? comment.time.format('YYYY-MM-DDTHH:mm:ss') : null,
+          status_id: comment.statusId ? comment.statusId : null
+        }))
       }
-      console.log(customerData)
-      const response = await createCustomer(customerData)
-      console.log('Customer created successfully:', response)
+      if (customer) {
+        // await updateCustomer(customer.id, customerData)
+      } else {
+        await createCustomer(customerData)
+      }
+      setIsModalVisible(false)
       if (onCustomerAdded) {
         onCustomerAdded()
       }
-      setIsModalVisible(false)
     } catch (error) {
-      console.error('Failed to create customer:', error)
+      console.error('Failed to create/update customer:', error)
     }
+  }
+
+  const showModal = () => {
+    setIsModalVisible(true)
   }
 
   const handleCancel = () => {
     setIsModalVisible(false)
+    form.resetFields()
   }
+
   const handleAddSource = async (newSource) => {
-    debugger;
     const newId = (sources.length + 1).toString()
     setSources([...sources, { id: newId, title: newSource }])
     const newData = { title: newSource }
     await createSources(newData)
   }
+
   const handleAddStatus = async (newSource) => {
-    debugger;
-    const newId = (sources.length + 1).toString()
+    const newId = (status.length + 1).toString()
     setStatus([...status, { id: newId, title: newSource }])
     const newData = { title: newSource }
     await createStatus(newData)
   }
+
   const handleAddSocialMedia = async (newSource) => {
-    const newId = (sources.length + 1).toString()
+    const newId = (socialMedia.length + 1).toString()
     setSocialMedia([...socialMedia, { id: newId, title: newSource }])
     const newData = { title: newSource }
     await createSocialMedia(newData)
   }
 
+  const handleAddComment = (comment) => {
+    setComments([...comments, comment])
+  }
+
   return (
     <div>
       <Button type='primary' onClick={showModal} style={{ float: 'right' }}>
-        Thêm khách hàng
+        {customer ? 'Chỉnh sửa khách hàng' : 'Thêm khách hàng'}
       </Button>
 
       <Modal
-        title='Tạo khách hàng'
+        title={customer ? 'Chỉnh sửa khách hàng' : 'Tạo khách hàng'}
         open={isModalVisible}
+        onOk={form.submit}
         onCancel={handleCancel}
         okText='Xác nhận'
         cancelText='Hủy'
         width={1000}
-        footer={null}
       >
-        <Form layout='vertical' onFinish={handleOk}>
+        <Form layout='vertical' form={form} onFinish={handleOk}>
           <Row gutter={16}>
             <Col span={8}>
               <Form.Item
@@ -199,12 +251,12 @@ const AddCustomerButton = ({ onCustomerAdded }) => {
             </Col>
             <Col span={8}>
               <Row gutter={16}>
-                <Col span={8}>
+                <Col span={12}>
                   <Form.Item label='Mạng xã hội' name='socialMedia'>
                     <CustomDropdown placeholder='Chọn mạng xã hội' data={socialMedia} onAdd={handleAddSocialMedia} />
                   </Form.Item>
                 </Col>
-                <Col span={16}>
+                <Col span={12}>
                   <Form.Item label='URL' name='socialMediaUrl'>
                     <Input placeholder='Nhập URL mạng xã hội' />
                   </Form.Item>
@@ -258,18 +310,40 @@ const AddCustomerButton = ({ onCustomerAdded }) => {
               <Form.Item label='Địa chỉ'>
                 <Row gutter={16}>
                   <Col span={24}>
-                    <Form.Item name='city'>
-                      <Input placeholder='Thành phố' />
+                    <Form.Item label='Tỉnh/Thành phố' name='city'>
+                      <Select placeholder='Chọn tỉnh/thành phố' onChange={handleProvinceChange}>
+                        {provinces.map((province) => (
+                          <Select.Option key={province.ProvinceID} value={province.ProvinceID}>
+                            {province.ProvinceName}
+                          </Select.Option>
+                        ))}
+                      </Select>
                     </Form.Item>
                   </Col>
                   <Col span={24}>
-                    <Form.Item name='district'>
-                      <Input placeholder='Quận' />
+                    <Form.Item label='Quận/Huyện' name='district'>
+                      <Select
+                        placeholder='Chọn quận/huyện'
+                        onChange={handleDistrictChange}
+                        disabled={!selectedProvince}
+                      >
+                        {districts.map((district) => (
+                          <Select.Option key={district.DistrictID} value={district.DistrictID}>
+                            {district.DistrictName}
+                          </Select.Option>
+                        ))}
+                      </Select>
                     </Form.Item>
                   </Col>
                   <Col span={24}>
-                    <Form.Item name='ward'>
-                      <Input placeholder='Phường' />
+                    <Form.Item label='Phường/Xã' name='ward'>
+                      <Select placeholder='Chọn phường/xã' disabled={!selectedDistrict}>
+                        {wards.map((ward) => (
+                          <Select.Option key={ward.WardCode} value={ward.WardCode}>
+                            {ward.WardName}
+                          </Select.Option>
+                        ))}
+                      </Select>
                     </Form.Item>
                   </Col>
                 </Row>
@@ -291,7 +365,7 @@ const AddCustomerButton = ({ onCustomerAdded }) => {
 
           <Row gutter={16}>
             <Col span={24}>
-              <CustomerCareTable />
+              <CustomerCareTable comments={comments} status={status} setComments={setComments} />
             </Col>
           </Row>
 

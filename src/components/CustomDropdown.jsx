@@ -9,7 +9,7 @@ const CustomDropdown = ({ placeholder, data, value, onChange, onAdd }) => {
       onAdd(newItem);
       setNewItem(''); 
     }
-    setNewItem('');
+    setNewItem
   };
 
   return (
@@ -17,7 +17,6 @@ const CustomDropdown = ({ placeholder, data, value, onChange, onAdd }) => {
       showSearch
       placeholder={placeholder}
       optionFilterProp="children"
-      style={{ width: 300 }}
       value={value}
       onChange={onChange}
       filterOption={(input, option) =>

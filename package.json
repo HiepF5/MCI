@@ -16,6 +16,7 @@
     "@ant-design/icons": "^5.5.1",
     "antd": "^5.22.2",
     "axios": "^1.7.7",
+    "dotenv": "^16.4.5",
     "less": "^4.2.0",
     "less-loader": "^12.2.0",
     "moment": "^2.30.1",

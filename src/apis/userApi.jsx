@@ -113,4 +113,12 @@ export const getSocialMedia = async () => {
     throw error
   }
 }
-
+export const getCustomerById = async (id) => {
+  try {
+    const response = await axiosInstance.get(`/customers/${id}`)
+    return response.data
+  } catch (error) {
+    console.error('Error creating customer:', error)
+    throw error
+  }
+}

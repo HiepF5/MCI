@@ -1,84 +1,79 @@
-import React, { useState } from 'react';
-import { Table, DatePicker, Input, Select, Button } from 'antd';
+import React from 'react'
+import { Table, DatePicker, Input, Select, Button } from 'antd'
 
-const { Option } = Select;
+const { Option } = Select
 
-const CustomerCareTable = () => {
-  const [dataSource, setDataSource] = useState([
-    { key: 1, date: null, result: '', status: '' },
-  ]);
-
+const CustomerCareTable = ({ comments, setComments, status }) => {
   const handleAddRow = () => {
-    setDataSource([
-      ...dataSource,
-      { key: dataSource.length + 1, date: null, result: '', status: '' },
-    ]);
-  };
+    const newComments = [
+      ...comments,
+      { key: comments.length + 1, time: null, title: '', status_id: '' }
+    ]
+    setComments(newComments)
+  }
 
   const handleInputChange = (key, field, value) => {
-    const newData = dataSource.map((item) =>
-      item.key === key ? { ...item, [field]: value } : item
-    );
-    setDataSource(newData);
-  };
+    const newComments = comments.map((item, index) =>
+      index + 1 === key ? { ...item, [field]: value } : item
+    )
+    setComments(newComments)
+    console.log(comments)
+  }
 
   const columns = [
     {
       title: 'Lần',
       dataIndex: 'key',
       key: 'key',
-      render: (text) => <div style={{ textAlign: 'center' }}>{text}</div>,
+      render: (text, record, index) => <div style={{ textAlign: 'center' }}>{index + 1}</div>
     },
     {
       title: 'Ngày',
-      dataIndex: 'date',
-      key: 'date',
-      render: (_, record) => (
-        <DatePicker
-          format="DD/MM/YYYY"
-          style={{ width: '100%' }}
-          onChange={(date, dateString) =>
-            handleInputChange(record.key, 'date', dateString)
-          }
-        />
-      ),
+      dataIndex: 'time',
+      key: 'time',
+      render: (_, record, index) => (
+        <DatePicker format='DD/MM/YYYY' style={{ width: '100%' }} />
+      )
     },
     {
       title: 'Kết quả chăm sóc',
-      dataIndex: 'result',
-      key: 'result',
-      render: (_, record) => (
+      dataIndex: 'title',
+      key: 'title',
+      render: (_, record, index) => (
         <Input
           placeholder="Kết quả chăm sóc"
-          value={record.result}
+          value={record.title}
           onChange={(e) =>
-            handleInputChange(record.key, 'result', e.target.value)
+            handleInputChange(index + 1, 'title', e.target.value)
           }
         />
-      ),
+      )
     },
     {
       title: 'Cập nhật trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      render: (_, record) => (
+      dataIndex: 'status_id',
+      key: 'status_id',
+      render: (_, record, index) => (
         <Select
           placeholder="Cập nhật trạng thái"
-          value={record.status}
+          value={record.status_id}
           style={{ width: '100%' }}
-          onChange={(value) => handleInputChange(record.key, 'status', value)}
+          onChange={(value) => handleInputChange(index + 1, 'status_id', value)}
         >
-          <Option value="follow-up">Gọi lại lần sau</Option>
-          <Option value="trial-request">Yêu cầu trải nghiệm</Option>
+          {status.map((item) => (
+            <Option key={item.id} value={item.id}>
+              {item.title}
+            </Option>
+          ))}
         </Select>
-      ),
-    },
-  ];
+      )
+    }
+  ]
 
   return (
     <div>
       <Table
-        dataSource={dataSource}
+        dataSource={comments.map((comment, index) => ({ ...comment, key: index + 1 }))}
         columns={columns}
         pagination={false}
         bordered
@@ -93,7 +88,7 @@ const CustomerCareTable = () => {
         )}
       />
     </div>
-  );
-};
+  )
+}
 
-export default CustomerCareTable;
+export default CustomerCareTable
